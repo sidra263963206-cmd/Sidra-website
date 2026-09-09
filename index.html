@@ -90,28 +90,37 @@
     </div>
 
     <script>
-        let cartQuantity = 0;
+    let cartQuantity = 0;
 
-        function addToCart() {
-            cartQuantity++;
-            document.getElementById('cart-count').innerText = cartQuantity;
-            document.getElementById('checkout-qty').innerText = cartQuantity;
-            document.getElementById('form-qty').value = cartQuantity;
-            alert("Sider Leaf Powder added to your cart!");
-        }
+    function addToCart() {
+        cartQuantity++;
+        document.getElementById('cart-count').innerText = cartQuantity;
+        document.getElementById('checkout-qty').innerText = cartQuantity;
+        document.getElementById('form-qty').value = cartQuantity;
+        alert("Sider Leaf Powder added to your cart!");
+    }
 
-        function openCheckout() {
-            if (cartQuantity === 0) {
-                alert("Your cart is empty! Please add an item first.");
-                return;
-            }
-            document.getElementById('checkoutModal').style.display = 'flex';
+    function openCheckout() {
+        if (cartQuantity === 0) {
+            alert("Your cart is empty! Please add an item first.");
+            return;
         }
+        document.getElementById('checkoutModal').style.display = 'flex';
+    }
 
-        function closeCheckout() {
-            document.getElementById('checkoutModal').style.display = 'none';
+    function closeCheckout() {
+        document.getElementById('checkoutModal').style.display = 'none';
+    }
+
+    // NEW: Close modal if user clicks the dark background overlay
+    window.onclick = function(event) {
+        const modal = document.getElementById('checkoutModal');
+        if (event.target === modal) {
+            closeCheckout();
         }
+    }
     </script>
+    
 </body>
 </html>
 
