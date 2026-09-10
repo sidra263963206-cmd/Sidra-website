@@ -220,6 +220,14 @@ button[type="submit"]:disabled {
   cursor: not-allowed;
 }
 </style>
+<!-- FIX: these were bare "https://unpkg.com" links (no package specified),
+     which is why Leaflet's `L` object never loaded and the map broke. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
 </head>
 <body>
 
@@ -287,9 +295,42 @@ button[type="submit"]:disabled {
       <input type="email" name="Email Address" required placeholder="Email Address">
       <input type="tel" name="Phone Number" required pattern="[0-9+\-\s()]{7,20}" title="Enter a valid phone number (digits, spaces, +, -, ( ) only)" placeholder="Phone Number">
       <textarea name="Shipping Address" required placeholder="Full Shipping Address" rows="3"></textarea>
+      
+
+      <!-- NEW: Location Section -->
+      <div class="checkout-location-group" style="margin-top: 15px; font-family: sans-serif;">
+          <label style="display: block; font-weight: bold; margin-bottom: 5px;">Delivery Address</label>
+          
+          <!-- Keeping the normal text option -->
+          <input type="text" id="billing-address-text" placeholder="Enter your delivery address manually..." 
+                style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+          
+          <!-- Toggle Map Button -->
+          <button type="button" onclick="toggleCheckoutMap()" 
+                  style="margin-top: 8px; padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              📍 Pin Location on Map
+          </button>
+
+          <!-- Hidden Inputs to securely capture data for your backend -->
+          <input type="hidden" id="selected-latitude" name="latitude">
+          <input type="hidden" id="selected-longitude" name="longitude">
+
+          <!-- The Map Panel Canvas (Hidden by default, slides open when clicked) -->
+          <div id="checkout-map-container" style="display: none; margin-top: 10px;">
+              <div id="checkout-map" style="height: 250px; width: 100%; border: 1px solid #ddd; border-radius: 4px;"></div>
+              <p style="font-size: 12px; color: #666; margin-top: 5px;">Click on the map to pin your exact delivery door.</p>
+          </div>
+      </div>
+
+
+
 
       <button type="submit" id="submit-btn">Place Order</button>
     </form>
+
+
+    
+
   </div>
 </div>
 
@@ -427,6 +468,87 @@ function handleSubmit(event) {
 
   return false;
 }
+
+
+
+
+
+let checkoutMapInstance = null;
+let checkoutMarker = null;
+
+function toggleCheckoutMap() {
+    const mapContainer = document.getElementById('checkout-map-container');
+    
+    // Toggle visibility of the map panel
+    if (mapContainer.style.display === 'none') {
+        mapContainer.style.display = 'block';
+        
+        // Setup map instance if it doesn't exist yet
+        if (!checkoutMapInstance) {
+            initCheckoutMap();
+        } else {
+            // CRITICAL FIX: If the map exists, force it to recalculate its dimensions 
+            // wrapped in a tiny timeout so the browser has time to register the layout block
+            setTimeout(() => {
+                checkoutMapInstance.invalidateSize();
+            }, 50);
+        }
+    } else {
+        mapContainer.style.display = 'none';
+    }
+}
+
+function initCheckoutMap() {
+    // Starts with a broad view (zoom level 2)
+    checkoutMapInstance = L.map('checkout-map').setView([0, 0], 2);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+    }).addTo(checkoutMapInstance);
+
+    // Auto-center on browser geolocation if available
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            checkoutMapInstance.setView([lat, lng], 15);
+            updateCheckoutCoordinates(lat, lng);
+        });
+    }
+
+    // Trigger picker handler on grid clicks
+    checkoutMapInstance.on('click', function(e) {
+        const selectedLat = e.latlng.lat;
+        const selectedLng = e.latlng.lng;
+        updateCheckoutCoordinates(selectedLat, selectedLng);
+    });
+
+    // CRITICAL FIX: Force dimensions recalculation directly after drawing the initial tiles
+    setTimeout(() => {
+        checkoutMapInstance.invalidateSize();
+    }, 100);
+}
+
+function updateCheckoutCoordinates(lat, lng) {
+    document.getElementById('selected-latitude').value = lat;
+    document.getElementById('selected-longitude').value = lng;
+
+    // Keep the visible text field in sync with the pinned point too
+    document.getElementById('billing-address-text').value = `Pinned location: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+    if (checkoutMarker) {
+        checkoutMarker.setLatLng([lat, lng]);
+    } else {
+        checkoutMarker = L.marker([lat, lng]).addTo(checkoutMapInstance);
+    }
+}
+
+
+
+
+
+
 
 // Close modal if user clicks the dark background overlay
 window.onclick = function(event) {
