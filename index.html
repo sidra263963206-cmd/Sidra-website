@@ -257,25 +257,15 @@ button[type="submit"]:disabled {
       <span id="total-price">$0.00</span>
     </div>
 
-    <form id="orderForm" action="https://formsubmit.co/machmouchiibrahim4@gmail.com" method="POST" onsubmit="return handleSubmit(event)">
+    <!-- Shows the real error message from formsubmit.co if a submission fails -->
+    <p id="submit-error" style="display:none; color:#c62828; font-weight:bold; margin-bottom:10px;"></p>
+
+    <form id="orderForm" onsubmit="return handleSubmit(event)">
       <!-- Disable Captcha for a smoother checkout experience -->
       <input type="hidden" name="_captcha" value="false">
-      <!-- Once this page is hosted at a real URL, you can redirect customers to your
-           own thank-you page by adding back a _next field with a FULL absolute URL,
-           e.g. value="https://yourdomain.com/thank-you.html" — a relative path or a
-           file:// path will make formsubmit.co error out, which is what happened here. -->
-      <!-- Give the email a clear subject line -->
-      <input type="hidden" name="_subject" value="New Sidra order">
       <!-- Hidden inputs to send product info -->
       <input type="hidden" name="Product" value="Sider Leaf Powder">
       <input type="hidden" id="form-qty" name="Quantity" value="1">
-
-      <!-- Hidden input to submit the total cost via email.
-           Note: this value is client-calculated and can be edited by anyone
-           before submitting, so treat it as a reference only — always confirm
-           the real charge as Quantity x $19.99 on your end before fulfilling
-           or invoicing an order. -->
-      <input type="hidden" id="form-total" name="Total Price" value="$0.00">
 
       <input type="text" name="Full Name" required placeholder="Full Name">
       <input type="email" name="Email Address" required placeholder="Email Address">
@@ -303,7 +293,6 @@ function updateCartUI() {
 
   // Update visible and form data for total cost
   document.getElementById('total-price').innerText = `$${currentTotal}`;
-  document.getElementById('form-total').value = `$${currentTotal}`;
 
   // Disable the minus button at 0 and the plus button at the max quantity
   document.getElementById('qty-minus').disabled = cartQuantity <= 0;
@@ -353,17 +342,74 @@ function closeCheckout() {
   document.getElementById('checkoutModal').style.display = 'none';
 }
 
-// Prevent duplicate orders from double-clicks or repeated Enter presses
+// Submits via formsubmit.co's AJAX endpoint so we can see the REAL error
+// message (rate limit, blocked content, bad address, etc.) instead of a
+// dead-end "Whoops" page with no explanation.
+const FORM_ENDPOINT = "https://formsubmit.co/ajax/machmouchiibrahim4@gmail.com";
+
 function handleSubmit(event) {
+  event.preventDefault(); // always intercept — we submit manually below
+
   if (submitting || cartQuantity <= 0) {
-    event.preventDefault();
     return false;
   }
+
+  const form = document.getElementById('orderForm');
+  const errorBox = document.getElementById('submit-error');
+  errorBox.style.display = 'none';
+
+  // Basic required-field check since we're bypassing native form submission
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return false;
+  }
+
   submitting = true;
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
   btn.innerText = 'Placing order…';
-  return true;
+
+  const formData = new FormData(form);
+
+  fetch(FORM_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Accept': 'application/json' },
+    body: formData
+  })
+    .then(async (response) => {
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (e) {
+        // formsubmit sometimes returns non-JSON on hard errors
+      }
+
+      if (response.ok) {
+        alert("Order placed! Thank you.");
+        closeCheckout();
+        cartQuantity = 0;
+        updateCartUI();
+        form.reset();
+      } else {
+        const message = (payload && (payload.message || payload.error))
+          || `formsubmit.co returned an error (HTTP ${response.status}). Open the browser console for the full response.`;
+        console.error('formsubmit.co error response:', payload || response.statusText);
+        errorBox.innerText = message;
+        errorBox.style.display = 'block';
+      }
+    })
+    .catch((err) => {
+      console.error('Network error submitting to formsubmit.co:', err);
+      errorBox.innerText = "Couldn't reach formsubmit.co — check your internet connection and try again.";
+      errorBox.style.display = 'block';
+    })
+    .finally(() => {
+      submitting = false;
+      btn.disabled = false;
+      btn.innerText = 'Place Order';
+    });
+
+  return false;
 }
 
 // Close modal if user clicks the dark background overlay
