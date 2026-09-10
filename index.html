@@ -260,8 +260,10 @@ button[type="submit"]:disabled {
     <form id="orderForm" action="https://formsubmit.co/machmouchiibrahim4@gmail.com" method="POST" onsubmit="return handleSubmit(event)">
       <!-- Disable Captcha for a smoother checkout experience -->
       <input type="hidden" name="_captcha" value="false">
-      <!-- Send the customer back to a real thank-you page instead of formsubmit's default one -->
-      <input type="hidden" name="_next" value="thank-you.html">
+      <!-- Once this page is hosted at a real URL, you can redirect customers to your
+           own thank-you page by adding back a _next field with a FULL absolute URL,
+           e.g. value="https://yourdomain.com/thank-you.html" — a relative path or a
+           file:// path will make formsubmit.co error out, which is what happened here. -->
       <!-- Give the email a clear subject line -->
       <input type="hidden" name="_subject" value="New Sidra order">
       <!-- Hidden inputs to send product info -->
