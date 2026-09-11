@@ -1,5 +1,0 @@
-Name:hii
-Description:oolala waw keh
-price:3
-weight:30g
-image:
