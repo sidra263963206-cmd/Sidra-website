@@ -1,6 +1,6 @@
 Name: 100% Natural Jujube leaf powder
 Description: Experience the pure power of nature with Sidra Natural Wellness. Our premium  Jujube leaf  Powder is traditionally used as a natural cleanser, hair wash, and soothing skin mask
-Price: 9,99
+Price: 9.99
 Weight: 100g
 Image: 1000811080.jpeg
  
