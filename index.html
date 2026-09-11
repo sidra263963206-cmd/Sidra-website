@@ -284,6 +284,22 @@ button[type="submit"]:disabled {
   background: #9e9e9e;
   cursor: not-allowed;
 }
+
+
+
+@keyframes bounce {
+  0%,100% {transform: translateY(0);}
+  50%{transform: translateY(-10px);}
+}
+
+.cart-btn:hover {
+  animation: bounce 0.5s ease infinite;
+}
+
+
+
+
+  
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
